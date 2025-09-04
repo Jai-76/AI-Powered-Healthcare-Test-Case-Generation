@@ -1,0 +1,476 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Healthcare Test Case Generation Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .bg-healthcare {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .test-case-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .test-case-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Signup/Login Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close float-right text-2xl font-bold cursor-pointer" onclick="closeModal()">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-center" id="modalTitle">Sign Up</h2>
+            <form id="authForm">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="username" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="mb-4" id="confirmPasswordSection">
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300" id="authButton">Sign Up</button>
+            </form>
+            <p class="text-center mt-4">
+                <span id="toggleText">Already have an account?</span> 
+                <a href="#" onclick="toggleAuthMode()" class="text-blue-600 hover:underline" id="toggleLink">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <div class="bg-healthcare text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">AI-Powered Healthcare Test Case Generator</h1>
+                        <p class="text-lg">Transform healthcare software requirements into compliant, traceable test cases with enterprise-grade integrations</p>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="userDisplay" class="mr-4"></span>
+                        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition duration-300">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Requirements Input Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Enter Healthcare Software Requirements</h2>
+                <form id="requirementsForm">
+                    <div class="mb-4">
+                        <label for="systemType" class="block text-sm font-medium text-gray-700 mb-2">System Type</label>
+                        <select id="systemType" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select system type</option>
+                            <option value="Electronic Health Records (EHR)">Electronic Health Records (EHR)</option>
+                            <option value="Patient Monitoring System">Patient Monitoring System</option>
+                            <option value="Telemedicine Platform">Telemedicine Platform</option>
+                            <option value="Pharmacy Management System">Pharmacy Management System</option>
+                            <option value="Lab Information System">Lab Information System</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="requirementText" class="block text-sm font-medium text-gray-700 mb-2">Requirement Description</label>
+                        <textarea id="requirementText" rows="6" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Describe the healthcare software requirement in detail..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Compliance Standards</label>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="HIPAA">
+                                <span class="ml-2">HIPAA</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="FDA 21 CFR Part 11">
+                                <span class="ml-2">FDA 21 CFR Part 11</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="GDPR">
+                                <span class="ml-2">GDPR</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="HL7">
+                                <span class="ml-2">HL7</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        Generate Test Cases
+                    </button>
+                </form>
+            </div>
+
+            <!-- AI Processing Indicator -->
+            <div id="processing" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <span class="ml-4 text-lg text-gray-700">AI Processing requirements...</span>
+                </div>
+            </div>
+
+            <!-- Generated Test Cases Section -->
+            <div id="results" class="bg-white rounded-lg shadow-md p-6 hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Generated Test Cases</h2>
+                <div class="mb-4">
+                    <label for="exportFormat" class="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+                    <select id="exportFormat" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="json">JSON</option>
+                        <option value="csv">CSV</option>
+                        <option value="xml">XML</option>
+                    </select>
+                    <button id="exportBtn" class="ml-4 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-300">Export</button>
+                </div>
+                <div id="testCasesContainer" class="space-y-4"></div>
+            </div>
+
+            <!-- Enterprise Integrations Mock -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Enterprise Integrations</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/1944ebd5-9a24-4741-9971-a8551249a23b.png" alt="Jira integration icon - blue circular logo with white J" class="mx-auto mb-2 rounded-md" onerror="this.src='https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/48fafd4d-d1fb-4ae0-ba50-b64c64b96655.png'">
+                        <p class="text-sm">Jira</p>
+                        <span class="text-green-600 text-xs">Connected</span>
+                    </div>
+                    <div class="text-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b768c7a1-dcb9-4bb7-a970-ec1590db9287.png" alt="TestRail integration icon - green rectangular logo with white text" class="mx-auto mb-2 rounded-md" onerror="this.src='https://placehold.co/150x100/cc0000/white?text=Error'">
+                        <p class="text-sm">TestRail</p>
+                        <span class="text-green-600 text-xs">Connected</span>
+                    </div>
+                    <div class="text-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ee72a561-812a-450d-92a1-5726d8db8536.png" alt="HIPAA Audit integration icon - orange shield with lock symbol" class="mx-auto mb-2 rounded-md" onerror="this.src='https://placehold.co/150x100/cc0000/white?text=Error'">
+                        <p class="text-sm">HIPAA Audit</p>
+                        <span class="text-green-600 text-xs">Connected</span>
+                    </div>
+                    <div class="text-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/630c66f7-7117-437b-b48f-ff579131ebf2.png" alt="GitHub integration icon - purple Octocat mascot logo" class="mx-auto mb-2 rounded-md" onerror="this.src='https://placehold.co/150x100/cc0000/white?text=Error'">
+                        <p class="text-sm">GitHub</p>
+                        <span class="text-green-600 text-xs">Connected</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traceability Matrix -->
+            <div id="traceability" class="bg-white rounded-lg shadow-md p-6 mt-8 hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Requirements Traceability Matrix</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="px-4 py-2 text-left">Requirement ID</th>
+                                <th class="px-4 py-2 text-left">Test Case ID</th>
+                                <th class="px-4 py-2 text-left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traceabilityBody"></tbody>
+                        </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple local storage for demo purposes (in production, use secure backend)
+        let users = JSON.parse(localStorage.getItem('healthcareAppUsers')) || [];
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        let isLoginMode = false;
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            const modalTitle = document.getElementById('modalTitle');
+            const authButton = document.getElementById('authButton');
+            const confirmPasswordSection = document.getElementById('confirmPasswordSection');
+            const toggleText = document.getElementById('toggleText');
+            const toggleLink = document.getElementById('toggleLink');
+
+            if (isLoginMode) {
+                modalTitle.textContent = 'Login';
+                authButton.textContent = 'Login';
+                confirmPasswordSection.style.display = 'none';
+                document.getElementById('confirmPassword').required = false;
+                toggleText.textContent = "Don't have an account?";
+                toggleLink.textContent = 'Sign Up';
+            } else {
+                modalTitle.textContent = 'Sign Up';
+                authButton.textContent = 'Sign Up';
+                confirmPasswordSection.style.display = 'block';
+                document.getElementById('confirmPassword').required = true;
+                toggleText.textContent = 'Already have an account?';
+                toggleLink.textContent = 'Login';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('fade-in');
+            document.getElementById('userDisplay').textContent = `Welcome, ${currentUser.username}!`;
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authModal').style.display = 'block';
+            toggleAuthMode();
+            document.getElementById('authForm').reset();
+        }
+
+        // Initialize app
+        if (currentUser) {
+            showMainApp();
+        } else {
+            document.getElementById('authModal').style.display = 'block';
+            toggleAuthMode();
+        }
+
+        // Auth form submission
+        document.getElementById('authForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (isLoginMode) {
+                // Login logic
+                const user = users.find(u => u.email === email && u.password === password);
+                if (user) {
+                    currentUser = user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showMainApp();
+                } else {
+                    alert('Invalid email or password');
+                }
+            } else {
+                // Sign up logic
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match');
+                    return;
+                }
+                
+                const existingUser = users.find(u => u.email === email || u.username === username);
+                if (existingUser) {
+                    alert('User with this email or username already exists');
+                    return;
+                }
+                
+                const newUser = {
+                    id: Date.now(),
+                    email,
+                    username,
+                    password
+                };
+                users.push(newUser);
+                localStorage.setItem('healthcareAppUsers', JSON.stringify(users));
+                currentUser = newUser;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showMainApp();
+            }
+        });
+
+        // Requirements form submission
+        document.getElementById('requirementsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const systemType = document.getElementById('systemType').value;
+            const requirementText = document.getElementById('requirementText').value;
+            const complianceStandards = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            
+            if (!systemType || !requirementText) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            // Show processing
+            document.getElementById('processing').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('traceability').classList.add('hidden');
+            
+            // Simulate AI processing delay
+            setTimeout(() => {
+                generateTestCases(systemType, requirementText, complianceStandards);
+            }, 2000);
+        });
+        
+        function generateTestCases(systemType, requirementText, complianceStandards) {
+            document.getElementById('processing').classList.add('hidden');
+            
+            const testCases = simulateAITestCaseGeneration(systemType, requirementText, complianceStandards);
+            
+            displayTestCases(testCases);
+            document.getElementById('results').classList.remove('hidden').classList.add('fade-in');
+            
+            if (testCases.length > 0) {
+                generateTraceabilityMatrix(testCases);
+                document.getElementById('traceability').classList.remove('hidden').classList.add('fade-in');
+            }
+        }
+        
+        function simulateAITestCaseGeneration(systemType, requirementText, complianceStandards) {
+            // Simulate AI logic based on input
+            const testCases = [];
+            
+            if (systemType === 'Electronic Health Records (EHR)') {
+                testCases.push({
+                    id: 'TC-001',
+                    title: 'Patient Registration with HIPAA Compliance',
+                    description: 'Verify patient can be registered with required fields, ensuring PHI protection.',
+                    steps: [
+                        'Navigate to patient registration',
+                        'Enter patient demographics',
+                        'Verify encryption of data',
+                        'Check HIPAA audit logging'
+                    ],
+                    expected: 'Patient registered successfully, data encrypted, audit logs created.',
+                    compliance: complianceStandards.includes('HIPAA') ? 'Compliant' : 'Not Compliant'
+                });
+                testCases.push({
+                    id: 'TC-002',
+                    title: 'Data Access Control',
+                    description: 'Ensure only authorized personnel can access patient records.',
+                    steps: [
+                        'Login as nurse',
+                        'Attempt to access restricted patient data',
+                        'Verify role-based access control'
+                    ],
+                    expected: 'Access denied for unauthorized user, audit trail updated.',
+                    compliance: 'Compliant'
+                });
+            } else if (systemType === 'Patient Monitoring System') {
+                testCases.push({
+                    id: 'TC-003',
+                    title: 'Vital Signs Recording',
+                    description: 'Test recording and storage of patient vital signs.',
+                    steps: [
+                        'Connect monitoring device',
+                        'Record blood pressure',
+                        'Store in database'
+                    ],
+                    expected: 'Vital signs recorded accurately and stored securely.',
+                    compliance: 'Compliant'
+                });
+            } else {
+                // Generic test case
+                testCases.push({
+                    id: 'TC-004',
+                    title: 'System Functionality Test',
+                    description: 'Verify basic system functionality for the specified requirement.',
+                    steps: [
+                        'Perform specified action',
+                        'Validate outcome'
+                    ],
+                    expected: 'System behaves as expected.',
+                    compliance: 'Review Required'
+                });
+            }
+            
+            return testCases;
+        }
+        
+        function displayTestCases(testCases) {
+            const container = document.getElementById('testCasesContainer');
+            container.innerHTML = '';
+            
+            testCases.forEach(tc => {
+                const testCaseElement = document.createElement('div');
+                testCaseElement.className = 'test-case-card bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500';
+                testCaseElement.innerHTML = `
+                    <h3 class="font-semibold text-lg mb-2">${tc.id}: ${tc.title}</h3>
+                    <p class="text-gray-700 mb-2">${tc.description}</p>
+                    <h4 class="font-medium mb-1">Steps:</h4>
+                    <ol class="list-decimal list-inside mb-2 text-sm">
+                        ${tc.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                    <h4 class="font-medium mb-1">Expected Result:</h4>
+                    <p class="text-sm mb-2">${tc.expected}</p>
+                    <p class="text-xs"><strong>Compliance:</strong> 
+                        <span class="${tc.compliance === 'Compliant' ? 'text-green-600' : tc.compliance === 'Not Compliant' ? 'text-red-600' : 'text-yellow-600'}">${tc.compliance}</span>
+                    </p>
+                `;
+                container.appendChild(testCaseElement);
+            });
+        }
+        
+        function generateTraceabilityMatrix(testCases) {
+            const body = document.getElementById('traceabilityBody');
+            body.innerHTML = '';
+            
+            testCases.forEach(tc => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border px-4 py-2">REQ-${tc.id.split('-')[1]}</td>
+                    <td class="border px-4 py-2">${tc.id}</td>
+                    <td class="border px-4 py-2">
+                        <select class="p-1 border border-gray-300 rounded">
+                            <option value="Not Executed">Not Executed</option>
+                            <option value="Passed">Passed</option>
+                            <option value="Failed">Failed</option>
+                        </select>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+        }
+        
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const format = document.getElementById('exportFormat').value;
+            alert(`Exporting test cases in ${format.toUpperCase()} format. (This would integrate with enterprise systems in a full implementation.)`);
+        });
+    </script>
+</body>
+</html>
+</content>
+</create_file>
